@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO Básico -->
+    <title>Pixel Art Prompt Compiler | Generador de Prompts</title>
+    <meta name="description" content="Compilador y generador de prompts para crear Pixel Art, diseños para merchandising y arte retro con IA.">
+    <meta name="author" content="Nachoenmanzanares">
+    <meta name="theme-color" content="#0a0a1a">
+
+    <!-- Open Graph (Redes Sociales) -->
+    <meta property="og:title" content="Pixel Art Prompt Compiler">
+    <meta property="og:description" content="Crea prompts detallados para generar Pixel Art con IA. Incluye universos, estilos retro y formatos de impresión.">
+    <meta property="og:type" content="website">
+
+    <style>
+        :root {
+            --bg-dark: #0a0a1a;
+            --bg-section: #12122a;
+            --bg-input: #1a1a3a;
+            --neon-cyan: #00ffff;
+            --neon-green: #00ff00;
+            --neon-orange: #ff6600;
+            --neon-pink: #ff0066;
+            --neon-purple: #aa66ff;
+            --text-main: #e0e0e0;
+            --border-dim: #333366;
+            --border-mid: #555588;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Courier New', monospace; background: var(--bg-dark); color: var(--text-main); min-height: 100vh; padding: 20px; }
+        
+        /* Mejora de Accesibilidad: Focus visible para navegación con teclado */
+        a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+            outline: 2px solid var(--neon-orange);
+            outline-offset: 2px;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { text-align: center; color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); margin-bottom: 30px; font-size: 2em; }
+        
+        nav.tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+        .tab-btn { padding: 10px 20px; background: var(--bg-input); border: 2px solid var(--neon-cyan); color: var(--neon-cyan); cursor: pointer; font-family: 'Courier New', monospace; font-size: 14px; transition: all 0.3s; }
+        .tab-btn:hover, .tab-btn.active { background: var(--neon-cyan); color: var(--bg-dark); }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .section { background: var(--bg-section); border: 2px solid var(--border-dim); padding: 20px; margin-bottom: 20px; border-radius: 8px; }
+        .section h3 { color: var(--neon-orange); margin-bottom: 15px; font-size: 1.2em; }
+        
+        .options { display: flex; flex-wrap: wrap; gap: 8px; }
+        .option-btn { padding: 8px 14px; background: var(--bg-input); border: 1px solid var(--border-mid); color: #ccc; cursor: pointer; font-family: 'Courier New', monospace; font-size: 12px; transition: all 0.2s; }
+        .option-btn:hover { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+        .option-btn.selected { background: var(--neon-cyan); color: var(--bg-dark); border-color: var(--neon-cyan); }
+        
+        .preset-btn { padding: 8px 14px; background: #2a1a4a; border: 1px solid var(--neon-purple); color: var(--neon-purple); cursor: pointer; font-family: 'Courier New', monospace; font-size: 12px; transition: all 0.2s; }
+        .preset-btn:hover { background: var(--neon-purple); color: var(--bg-dark); }
+        
+        .compile-btn { display: block; width: 100%; padding: 20px; background: linear-gradient(135deg, var(--neon-orange), var(--neon-pink)); border: none; color: white; font-family: 'Courier New', monospace; font-size: 1.5em; font-weight: bold; cursor: pointer; margin: 30px 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .compile-btn:hover { transform: scale(1.02); }
+        
+        .prompt-wrapper { position: relative; }
+        textarea { width: 100%; min-height: 200px; background: var(--bg-dark); border: 2px solid var(--border-dim); color: var(--neon-green); font-family: 'Courier New', monospace; padding: 15px; font-size: 13px; cursor: pointer; transition: all 0.3s ease; user-select: all; resize: vertical; }
+        textarea:hover { border-color: var(--neon-green); box-shadow: 0 0 15px rgba(0, 255, 0, 0.3); }
+        textarea.copied { border-color: var(--neon-green); background: #0a2a0a; box-shadow: 0 0 20px rgba(0, 255, 0, 0.5); }
+        textarea.translated { border-color: var(--neon-purple); background: #1a0a2a; }
+        
+        .copy-hint { position: absolute; top: 10px; right: 10px; background: rgba(255, 102, 0, 0.9); color: white; padding: 5px 12px; font-size: 11px; border-radius: 4px; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; }
+        .copy-hint.visible { opacity: 1; }
+        
+        .copy-toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); background: var(--neon-green); color: var(--bg-dark); padding: 20px 40px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 1.3em; font-weight: bold; z-index: 3000; opacity: 0; pointer-events: none; transition: all 0.3s ease; box-shadow: 0 0 30px rgba(0, 255, 0, 0.6); text-align: center; }
+        .copy-toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        .copy-toast .toast-icon { font-size: 2em; display: block; margin-bottom: 5px; }
+        
+        .prompt-actions { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+        .action-btn { flex: 1; min-width: 150px; padding: 12px 20px; border: 2px solid; cursor: pointer; font-family: 'Courier New', monospace; font-size: 13px; font-weight: bold; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .translate-btn { background: #2a1a4a; border-color: var(--neon-purple); color: var(--neon-purple); }
+        .translate-btn:hover:not(:disabled) { background: var(--neon-purple); color: var(--bg-dark); }
+        .translate-btn.loading { animation: pulse 1s infinite; }
+        .copy-original-btn { background: #1a3a1a; border-color: var(--neon-green); color: var(--neon-green); }
+        .copy-original-btn:hover:not(:disabled) { background: var(--neon-green); color: var(--bg-dark); }
+        .copy-translated-btn { background: #1a1a4a; border-color: #66aaff; color: #66aaff; }
+        .copy-translated-btn:hover:not(:disabled) { background: #66aaff; color: var(--bg-dark); }
+        
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        
+        input, select { width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-mid); color: var(--text-main); font-family: 'Courier New', monospace; margin-bottom: 10px; }
+        label { display: block; color: var(--neon-orange); margin-bottom: 5px; font-size: 13px; }
+        
+        .universe-card { background: var(--bg-input); border: 2px solid var(--neon-purple); padding: 15px; margin-bottom: 10px; border-radius: 6px; transition: all 0.2s; }
+        .universe-card:hover { border-color: var(--neon-cyan); }
+        .universe-card h4 { color: var(--neon-purple); margin-bottom: 8px; }
+        .universe-card p { font-size: 12px; color: #999; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--bg-section); border: 2px solid var(--neon-cyan); padding: 30px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; border-radius: 8px; }
+        .modal-content h2 { color: var(--neon-cyan); margin-bottom: 20px; }
+        .close-btn { float: right; background: none; border: none; color: var(--neon-pink); font-size: 24px; cursor: pointer; }
+        
+        .save-btn { padding: 10px 20px; background: var(--neon-green); border: none; color: var(--bg-dark); font-family: 'Courier New', monospace; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .update-btn { padding: 10px 20px; background: #ffaa00; border: none; color: var(--bg-dark); font-family: 'Courier New', monospace; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .update-btn:hover { background: #ffcc44; }
+        
+        .api-key-notice { background: #1a3a1a; border: 1px solid var(--neon-green); padding: 10px; margin: 10px 0; font-size: 12px; color: var(--neon-green); }
+        
+        .info-popup { display: none; position: fixed; background: var(--bg-input); border: 2px solid var(--neon-orange); padding: 20px; max-width: 400px; width: 90%; z-index: 2000; box-shadow: 0 0 20px rgba(255, 102, 0, 0.5); animation: popupFadeIn 0.3s ease-out; word-wrap: break-word; max-height: 80vh; overflow-y: auto; border-radius: 8px; }
+        .info-popup.active { display: block; }
+        .info-popup h4 { color: var(--neon-orange); margin-bottom: 10px; font-size: 1.1em; }
+        .info-popup p { color: var(--text-main); font-size: 13px; line-height: 1.6; margin-bottom: 10px; }
+        .info-popup .info-category { color: var(--neon-cyan); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .info-popup .close-popup { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--neon-pink); font-size: 20px; cursor: pointer; padding: 5px; line-height: 1; }
+        
+        @keyframes popupFadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        
+        @media (max-width: 768px) {
+            body { padding: 10px; } h1 { font-size: 1.5em; margin-bottom: 20px; } .section { padding: 15px; } .section h3 { font-size: 1em; } .option-btn { font-size: 11px; padding: 6px 10px; } .compile-btn { font-size: 1.2em; padding: 15px; }
+            .info-popup { max-width: 92%; width: 92%; left: 4% !important; right: 4% !important; top: 50% !important; transform: translateY(-50%); padding: 25px 20px 20px 20px; max-height: 70vh; }
+            .copy-toast { font-size: 1em; padding: 15px 25px; width: 85%; text-align: center; } .action-btn { min-width: 100%; font-size: 12px; padding: 10px 15px; }
+        }
+        @media (max-width: 480px) { body { padding: 8px; } h1 { font-size: 1.3em; } .tab-btn { padding: 8px 12px; font-size: 12px; } .option-btn { font-size: 10px; padding: 5px 8px; } .section { padding: 12px; margin-bottom: 15px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>👾 COMPILADOR PIXEL ART</h1>
+        </header>
+
+        <nav class="tabs" aria-label="Navegación principal">
+            <button class="tab-btn active" data-tab="controles" aria-controls="controles">️ CONTROLES</button>
+            <button class="tab-btn" data-tab="salida" aria-controls="salida">📄 SALIDA</button>
+            <button class="tab-btn" data-tab="universo" aria-controls="universo"> UNIVERSO</button>
+        </nav>
+
+        <main>
+            <section id="controles" class="tab-content active" aria-labelledby="tab-controles">
+                <div class="section">
+                    <h3>🎨 ESTILO PIXEL ART</h3>
+                    <div class="options" id="style-options" role="group" aria-label="Estilos de pixel art">
+                        <button class="option-btn" data-value="Pixel Art Retro 16-bit" data-info="Estilo clásico de 16 bits con colores vibrantes y detalles moderados. Ideal para juegos de la era SNES/Genesis.">Retro 16-bit</button>
+                        <button class="option-btn" data-value="Pixel Art 8-bit NES" data-info="Estilo auténtico de Nintendo Entertainment System. Paleta limitada a 8 colores, sprites simples y nostálgicos.">8-bit NES</button>
+                        <button class="option-btn" data-value="Pixel Art Game Boy" data-info="Estilo monocromático verde de Game Boy original. Solo 4 tonos de verde, ultra minimalista y retro.">Game Boy</button>
+                        <button class="option-btn" data-value="Pixel Art SNES RPG" data-info="Estilo de juegos de rol de Super Nintendo. Detalles ricos, paleta de 16 colores, ideal para personajes y escenarios épicos.">SNES RPG</button>
+                        <button class="option-btn" data-value="Pixel Art Isométrico 3D" data-info="Vista isométrica que simula 3D con píxeles. Perfecto para juegos de estrategia y simulación tipo SimCity o Age of Empires.">Isométrico 3D</button>
+                        <button class="option-btn" data-value="Pixel Art Cyberpunk Neón" data-info="Estilo futurista con colores neón brillantes sobre fondos oscuros. Inspirado en Blade Runner y Cyberpunk 2077.">Cyberpunk Neón</button>
+                        <button class="option-btn" data-value="Pixel Art Dark Fantasy" data-info="Estilo oscuro y misterioso con temática fantástica. Sombras profundas, atmósfera gótica y detalles terroríficos.">Dark Fantasy</button>
+                        <button class="option-btn" data-value="Pixel Art Synthwave" data-info="Estilo retro-futurista de los 80s con colores rosa, morado y cian. Inspirado en la música synthwave y el vaporwave.">Synthwave</button>
+                        <button class="option-btn" data-value="Pixel Art Cute Chibi" data-info="Estilo adorable con personajes pequeños y cabezones. Colores pastel, diseño kawaii y expresión tierna.">Cute Chibi</button>
+                        <button class="option-btn" data-value="Pixel Art Horror" data-info="Estilo terrorífico con atmósfera oscura y perturbadora. Sombras intensas, colores desaturados y elementos de miedo.">Horror</button>
+                        <button class="option-btn" data-value="Pixel Art Arcade Fighter" data-info="Estilo de juegos de lucha arcade como Street Fighter o Mortal Kombat. Personajes detallados en primer plano.">Arcade Fighter</button>
+                        <button class="option-btn" data-value="Pixel Art Adventure RPG" data-info="Estilo de aventuras gráficas y RPG clásicos. Escenarios detallados, personajes expresivos y narrativa visual.">Adventure RPG</button>
+                        <button class="option-btn" data-value="Pixel Art Space Shooter" data-info="Estilo de juegos espaciales tipo Galaga o Gradius. Naves, explosiones y fondos estrellados.">Space Shooter</button>
+                        <button class="option-btn" data-value="Pixel Art Vaporwave" data-info="Estilo estético de internet con colores pastel, estatuas clásicas y elementos retro de los 90s.">Vaporwave</button>
+                        <button class="option-btn" data-value="Pixel Art Dithering Pictórico" data-info="Técnica de sombreado con patrones de puntos para crear gradientes. Estilo artístico y sofisticado.">Dithering Pictórico</button>
+                        <button class="option-btn" data-value="Pixel Art Sci-Fi" data-info="Estilo de ciencia ficción con tecnología futurista, naves espaciales y ambientes alienígenas.">Sci-Fi</button>
+                        <button class="option-btn" data-value="Pixel Art Carta Fantasía" data-info="Estilo de cartas coleccionables tipo Magic o Hearthstone. Marcos ornamentales y arte detallado.">Carta Fantasía</button>
+                        <button class="option-btn" data-value="Pixel Art Western" data-info="Estilo del viejo oeste con vaqueros, desiertos y saloons. Colores tierra y atmósfera polvorienta.">Western</button>
+                        <button class="option-btn" data-value="Pixel Art Anime" data-info="Estilo de animación japonesa con personajes expresivos, ojos grandes y colores vibrantes.">Anime</button>
+                        <button class="option-btn" data-value="Pixel Art Plataformas" data-info="Estilo clásico de juegos de plataformas tipo Mario o Sonic. Personajes en movimiento lateral.">Plataformas</button>
+                        <button class="option-btn" data-value="Pixel Art Icono de Inventario RPG" data-info="Estilo de icono de inventario tipo videojuego RPG (Zelda, Stardew Valley, Diablo). Cada elemento se renderiza como un sprite-icono individual, suelto y sin marco: contorno limpio de 1px, paleta reducida, sombreado plano de 2-3 tonos, sin fondo de escena (fondo neutro o transparente), con un sutil resplandor que sugiere objeto coleccionable/recogible. Los iconos se distribuyen libremente sin casillas ni cuadrícula. Ideal para sets de iconos, packs de stickers o assets reutilizables.">Icono Inventario RPG</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3> PRODUCTO</h3>
+                    <div class="options" id="product-options" role="group" aria-label="Tipos de producto">
+                        <button class="option-btn" data-value="Camiseta" data-info="Diseño para estampar en camisetas. Resolución recomendada: 128×128 px.">Camiseta</button>
+                        <button class="option-btn" data-value="Sudadera" data-info="Diseño para sudaderas sin cremallera. Ideal para logos grandes.">Sudadera</button>
+                        <button class="option-btn" data-value="Sudadera Zip" data-info="Diseño para sudaderas con cremallera.">Sudadera Zip</button>
+                        <button class="option-btn" data-value="Gorra" data-info="Diseño pequeño para gorras. Resolución 32×32 px.">Gorra</button>
+                        <button class="option-btn" data-value="Bolsa" data-info="Diseño para bolsas de tela o tote bags.">Bolsa</button>
+                        <button class="option-btn" data-value="Mochila" data-info="Diseño para mochilas.">Mochila</button>
+                        <button class="option-btn" data-value="Póster" data-info="Diseño para póster. Alta resolución recomendada.">Póster</button>
+                        <button class="option-btn" data-value="Lienzo Canvas" data-info="Diseño para lienzo con textura.">Lienzo Canvas</button>
+                        <button class="option-btn" data-value="Tapiz" data-info="Diseño para tapices textiles grandes.">Tapiz</button>
+                        <button class="option-btn" data-value="Taza" data-info="Diseño para tazas de cerámica.">Taza</button>
+                        <button class="option-btn" data-value="Funda Móvil" data-info="Diseño para fundas de teléfono.">Funda Móvil</button>
+                        <button class="option-btn" data-value="Pack de Pegatinas" data-info="Diseño para múltiples pegatinas en una hoja.">Pack de Pegatinas</button>
+                        <button class="option-btn" data-value="Carta Coleccionable" data-info="Diseño para cartas tipo trading cards.">Carta Coleccionable</button>
+                        <button class="option-btn" data-value="Marcapáginas" data-info="Diseño vertical alargado.">Marcapáginas</button>
+                        <button class="option-btn" data-value="Postal" data-info="Diseño para postales.">Postal</button>
+                        <button class="option-btn" data-value="Impresión A3" data-info="Impresión formato A3 (297×420 mm).">Impresión A3</button>
+                        <button class="option-btn" data-value="Impresión A4" data-info="Impresión formato A4 (210×297 mm).">Impresión A4</button>
+                        <button class="option-btn" data-value="Puzle" data-info="Diseño para rompecabezas.">Puzle</button>
+                        <button class="option-btn" data-value="Print Artístico" data-info="Impresión artística de alta calidad.">Print Artístico</button>
+                        <button class="option-btn" data-value="Giclée Print Premium" data-info="Impresión Giclée de máxima calidad.">Giclée Print Premium</button>
+                        <button class="option-btn" data-value="Arte Digital NFT" data-info="Arte digital para minting como NFT.">Arte Digital NFT</button>
+                        <button class="option-btn" data-value="Print Ilustración" data-info="Impresión de ilustración artística.">Print Ilustración</button>
+                        <button class="option-btn" data-value="Wallpaper Escritorio" data-info="Fondo de pantalla para monitores.">Wallpaper Escritorio</button>
+                        <button class="option-btn" data-value="Wallpaper Móvil" data-info="Fondo de pantalla para smartphones.">Wallpaper Móvil</button>
+                        <button class="option-btn" data-value="Avatar/Foto de Perfil" data-info="Imagen para perfiles en redes sociales.">Avatar/Foto de Perfil</button>
+                        <button class="option-btn" data-value="Banner Web" data-info="Diseño para banners de sitios web.">Banner Web</button>
+                        <button class="option-btn" data-value="Pieza de Ajedrez" data-info="Diseño para piezas de ajedrez personalizadas.">Pieza de Ajedrez</button>
+                        <button class="option-btn" data-value="Figura Coleccionable" data-info="Diseño para figuras coleccionables tipo Funko Pop.">Figura Coleccionable</button>
+                        <button class="option-btn" data-value="Lámpara Lava" data-info="Diseño para lámparas de lava personalizadas.">Lámpara Lava</button>
+                        <button class="option-btn" data-value="Vidriera" data-info="Diseño para vidrieras o vitrales.">Vidriera</button>
+                        <button class="option-btn" data-value="Proyección Mapping" data-info="Diseño para proyección sobre superficies 3D.">Proyección Mapping</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>📐 RESOLUCIÓN DE SPRITE</h3>
+                    <div class="options" id="resolution-options" role="group" aria-label="Resoluciones">
+                        <button class="option-btn" data-value="32×32 px — Icono / Pin / Gorra" data-info="Resolución mínima para iconos pequeños.">32×32 px</button>
+                        <button class="option-btn" data-value="64×64 px — Sticker / Avatar / Moneda" data-info="Resolución estándar para stickers y avatares.">64×64 px</button>
+                        <button class="option-btn" data-value="128×128 px — Camiseta / Póster / Mug" data-info="Resolución media para merchandising.">128×128 px</button>
+                        <button class="option-btn" data-value="256×256 px — Print / Canvas / Trading Card" data-info="Resolución alta para impresiones artísticas.">256×256 px</button>
+                        <button class="option-btn" data-value="512×512 px — Wallpaper / NFT / Giclée" data-info="Resolución máxima para calidad profesional.">512×512 px</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3> LÍMITE DE COLORES</h3>
+                    <div class="options" id="color-options" role="group" aria-label="Límite de colores">
+                        <button class="option-btn" data-value="4 colores — Game Boy / Ultra retro" data-info="Paleta ultra limitada de 4 colores.">4 colores</button>
+                        <button class="option-btn" data-value="8 colores — NES / CGA puro" data-info="Paleta de 8 colores como NES.">8 colores</button>
+                        <button class="option-btn" data-value="16 colores — SNES / Genesis clásico" data-info="Paleta de 16 colores de SNES.">16 colores</button>
+                        <button class="option-btn" data-value="32 colores — 32-bit / Neo Geo rico" data-info="Paleta de 32 colores de sistemas 32-bit.">32 colores</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>📷 ÁNGULO DE CÁMARA PIXEL</h3>
+                    <div class="options" id="camera-options" role="group" aria-label="Ángulos de cámara">
+                        <button class="option-btn" data-value="Vista Lateral 2D Plataformas" data-info="Vista lateral clásica de juegos de plataformas tipo Mario.">Vista Lateral 2D</button>
+                        <button class="option-btn" data-value="Perspectiva RPG 3/4" data-info="Vista isométrica suave típica de RPGs clásicos.">RPG 3/4</button>
+                        <button class="option-btn" data-value="Cenital Clásica" data-info="Vista completamente desde arriba.">Cenital Clásica</button>
+                        <button class="option-btn" data-value="Vista Isométrica 2.5D Grid" data-info="Vista isométrica técnica con grid visible.">Isométrica 2.5D</button>
+                        <button class="option-btn" data-value="Retrato Frontal Juego de Lucha" data-info="Vista frontal de personaje completo.">Retrato Frontal</button>
+                        <button class="option-btn" data-value="Cenital Dungeon Crawler" data-info="Vista cenital de mazmorras.">Cenital Dungeon</button>
+                        <button class="option-btn" data-value="Sprite de Personaje Primer Plano" data-info="Primer plano detallado del personaje.">Primer Plano</button>
+                        <button class="option-btn" data-value="Vista Aérea (Bird's Eye)" data-info="Vista desde gran altura. Ideal para mapas.">Vista Aérea</button>
+                        <button class="option-btn" data-value="Vista de Gusano (Worm's Eye)" data-info="Contrapicado extremo desde el suelo.">Vista de Gusano</button>
+                        <button class="option-btn" data-value="Perspectiva Forzada" data-info="Juego con el tamaño para crear ilusiones.">Perspectiva Forzada</button>
+                        <button class="option-btn" data-value="Vista Oblicua" data-info="Ángulo intermedio entre lateral e isométrico.">Vista Oblicua</button>
+                        <button class="option-btn" data-value="Vista Arquitectónica Frontal" data-info="Plano completamente recto y frontal.">Vista Arquitectónica</button>
+                        <button class="option-btn" data-value="Plano General Panorámico" data-info="Toma muy amplia que muestra todo el escenario.">Panorámico</button>
+                        <button class="option-btn" data-value="Macro Pixelado" data-info="Zoom extremo a un detalle específico.">Macro</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>💡 ILUMINACIÓN PIXEL</h3>
+                    <div class="options" id="lighting-options" role="group" aria-label="Iluminación">
+                        <button class="option-btn" data-value="Sombreado Dithering con Paleta Limitada" data-info="Técnica de dithering con patrones de puntos.">Dithering</button>
+                        <button class="option-btn" data-value="Sombra Dura 2 Tonos Sin Gradiente" data-info="Sombras duras sin transición.">Sombra Dura 2 Tonos</button>
+                        <button class="option-btn" data-value="Halo Neón Pixelado Fondo Oscuro" data-info="Efectos de brillo neón sobre fondos oscuros.">Halo Neón</button>
+                        <button class="option-btn" data-value="Luz Antorcha RPG Interior Dithered" data-info="Iluminación cálida de antorcha.">Luz Antorcha RPG</button>
+                        <button class="option-btn" data-value="Luz Exterior Cielo Brillante" data-info="Iluminación natural de exterior.">Luz Exterior</button>
+                        <button class="option-btn" data-value="Rim Pixel Un Solo Foco" data-info="Iluminación de contorno desde un solo foco.">Rim Pixel</button>
+                        <button class="option-btn" data-value="Horror Tenue Pixel" data-info="Iluminación tenue para escenas de horror.">Horror Tenue</button>
+                    </div>
+                </div>
+
+                <div class="section" id="active-universe-section">
+                    <h3>🌌 UNIVERSO ACTIVO</h3>
+                    <!-- CORREGIDO: Se eliminó el id duplicado. El div principal conserva active-universe-display -->
+                    <div id="active-universe-display" style="border: 1px solid var(--border-dim); border-radius: 6px; padding: 12px; min-height: 48px; display: flex; align-items: center; gap: 12px; cursor: pointer;" role="button" tabindex="0">
+                        <span id="active-universe-name" style="flex: 1; font-size: 0.9rem; color: #aaa;">Ninguno — ve a la pestaña Universo</span>
+                        <span style="font-size: 0.7rem; color: #555; white-space: nowrap;">✏️ cambiar</span>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>👾 COMPILAR PROMPT PIXEL ART</h3>
+                    <div style="margin-bottom: 15px;">
+                        <label for="background-select">🟦 FONDO PLANO</label>
+                        <select id="background-select">
+                            <option value="">Auto (según universo)</option>
+                            <option value="Fondo plano un solo color sólido sin entorno">Un solo color sólido sin entorno</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label for="design-text">🔤 TEXTO DEL DISEÑO</label>
+                        <input type="text" id="design-text" placeholder="Vacío = generado automáticamente según universo y estilo.">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label for="model-select">🎨 STABILITY AI</label>
+                        <select id="model-select">
+                            <option value="Stable Image Core">Stable Image Core — rápido</option>
+                            <option value="Stable Diffusion 3">Stable Diffusion 3 — equilibrado</option>
+                            <option value="Stable Image Ultra">Stable Image Ultra — máxima calidad</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label for="aspect-select">📦 ASPECT RATIO</label>
+                        <select id="aspect-select">
+                            <option value="">Auto (según producto)</option>
+                            <option value="1:1">1:1 — Cuadrado</option>
+                            <option value="2:3">2:3 — Retrato estándar</option>
+                            <option value="3:2">3:2 — Paisaje estándar</option>
+                            <option value="4:5">4:5 — Retrato Instagram</option>
+                            <option value="5:4">5:4 — Paisaje Instagram</option>
+                            <option value="9:16">9:16 — Vertical móvil</option>
+                            <option value="16:9">16:9 — Horizontal pantalla</option>
+                            <option value="9:21">9:21 — Vertical ultra</option>
+                            <option value="21:9">21:9 — Panorámico ultra</option>
+                        </select>
+                    </div>
+                    <div class="api-key-notice">
+                        🔑 La key se guarda solo en tu navegador.
+                        <a href="https://platform.stability.ai" target="_blank" rel="noopener noreferrer" style="color: var(--neon-cyan);">[Obtener key →]</a>
+                    </div>
+                    <label for="api-key" class="sr-only">API Key de Stability AI</label>
+                    <input type="password" id="api-key" placeholder="Pega tu API Key de Stability AI aquí">
+                </div>
+
+                <div id="icon-count-wrapper" style="display: none; margin-bottom: 12px; background: rgba(0,255,255,0.05); border: 1px solid #00ffff44; border-radius: 6px; padding: 10px 14px;">
+                    <label style="display: block; font-size: 0.75rem; color: var(--neon-cyan); margin-bottom: 6px;">🧩 NÚMERO DE ICONOS EN EL SET</label>
+                    <div class="options" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button class="option-btn icon-count-btn" data-count="1">×1</button>
+                        <button class="option-btn icon-count-btn" data-count="2">×2</button>
+                        <button class="option-btn icon-count-btn" data-count="4">×4</button>
+                        <button class="option-btn icon-count-btn" data-count="6">×6</button>
+                        <button class="option-btn icon-count-btn selected" data-count="9">×9</button>
+                        <button class="option-btn icon-count-btn" data-count="12">×12</button>
+                        <button class="option-btn icon-count-btn" data-count="16">×16</button>
+                        <button class="option-btn icon-count-btn" data-count="20">×20</button>
+                    </div>
+                </div>
+                <button class="compile-btn" id="compile-btn">👾 COMPILAR PROMPT</button>
+            </section>
+
+            <section id="salida" class="tab-content" aria-labelledby="tab-salida">
+                <div class="section">
+                    <h3> PROMPT GENERADO</h3>
+                    <div class="prompt-wrapper">
+                        <textarea id="output-prompt" readonly placeholder="Tu prompt aparecerá aquí después de compilar..." aria-label="Caja de texto con el prompt generado"></textarea>
+                        <div class="copy-hint" id="copy-hint">👆 Toca para copiar</div>
+                    </div>
+                    <div class="prompt-actions">
+                        <button class="action-btn translate-btn" id="translate-btn" disabled>
+                            <span>🌍</span><span>Traducir al Inglés</span>
+                        </button>
+                        <button class="action-btn copy-original-btn" id="copy-original-btn" disabled>
+                            <span></span><span>Copiar Original</span>
+                        </button>
+                        <button class="action-btn copy-translated-btn" id="copy-translated-btn" disabled style="display: none;">
+                            <span>📋</span><span>Copiar Traducción</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="section">
+                    <h3> PRESETS</h3>
+                    <div class="options" id="presets-container" role="group" aria-label="Presets de universos"></div>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="option-btn" id="export-btn" style="flex: 1;">⬇️ EXPORTAR DATOS</button>
+                    <button class="option-btn" id="import-btn" style="flex: 1;">️ IMPORTAR DATOS</button>
+                </div>
+                <input type="file" id="import-file" accept=".json" style="display: none;" aria-hidden="true">
+            </section>
+
+            <section id="universo" class="tab-content" aria-labelledby="tab-universo">
+                <div class="section">
+                    <h3>🌌 TUS UNIVERSOS</h3>
+                    <div id="universes-list" aria-live="polite"></div>
+                </div>
+                <button class="tab-btn" id="new-universe-btn" style="width: 100%; margin-top: 20px;">✨ CREAR NUEVO UNIVERSO</button>
+            </section>
+        </main>
+    </div>
+
+    <div class="modal" id="universe-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-content">
+            <button class="close-btn" id="close-modal" aria-label="Cerrar ventana">✕</button>
+            <h2 id="modal-title">✨ CREAR NUEVO UNIVERSO</h2>
+            <label for="universe-name">NOMBRE DEL UNIVERSO</label>
+            <input type="text" id="universe-name" placeholder="Ej: Fantasía Medieval">
+            <label for="universe-environments">ENTORNOS</label>
+            <textarea id="universe-environments" rows="4" placeholder="Mínimo 2 entornos, uno por línea."></textarea>
+            <label for="universe-subjects">SUJETOS / PERSONAJES</label>
+            <textarea id="universe-subjects" rows="4" placeholder="Mínimo 2 sujetos, uno por línea."></textarea>
+            <label for="universe-palettes">PALETAS DE COLORES</label>
+            <textarea id="universe-palettes" rows="4" placeholder="Mínimo 2 paletas, una por línea."></textarea>
+            <label for="universe-treasures">💎 TESOROS / ITEMS (opcional)</label>
+            <textarea id="universe-treasures" rows="4" placeholder="Objetos, items o tesoros del universo, uno por línea. Se usan junto a los sujetos en el estilo Icono Inventario RPG."></textarea>
+            <label for="universe-mood">MOOD / ATMÓSFERA</label>
+            <textarea id="universe-mood" rows="3" placeholder="Ej: Épico, misterioso, nostálgico..."></textarea>
+            <button class="save-btn" id="save-universe">💾 GUARDAR UNIVERSO</button>
+            <button class="update-btn" id="update-universe" style="display: none;">✏️ ACTUALIZAR UNIVERSO</button>
+            <button class="option-btn" id="cancel-universe" style="margin-left: 10px;">CANCELAR</button>
+        </div>
+    </div>
+
+    <div class="info-popup" id="info-popup" role="dialog" aria-modal="true" aria-labelledby="popup-title">
+        <button class="close-popup" id="close-popup" aria-label="Cerrar información">✕</button>
+        <div class="info-category" id="popup-category">CATEGORÍA</div>
+        <h4 id="popup-title">Título</h4>
+        <p id="popup-description">Descripción</p>
+    </div>
+
+    <div class="copy-toast" id="copy-toast" role="status" aria-live="polite">
+        <span class="toast-icon">✅</span>
+        ¡Prompt copiado!
+    </div>
+
+<script>
+    // ============================================
+    // 🔧 FUNCIÓN AUXILIAR: Escape HTML (anti-XSS)
+    // ============================================
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = String(str);
+        return div.innerHTML;
+    }
+
+    // ============================================
+    // DATOS DE UNIVERSOS POR DEFECTO
+    // ============================================
+    const defaultUniverses = [
+        { id: 'heroe-8bits', name: '🦸 Héroe de 8 Bit', environments: ['Mazmorra medieval con antorchas pixeladas','Castillo del reino con bandera ondeando','Bosque encantado con setas brillantes','Arena de batalla con cofres del tesoro'], subjects: ['Caballero con armadura azul y capa','Mago con sombrero puntiagudo y bastón','Escudo legendario con estrella dorada','Espada con alas y halo de luz','Cofre del tesoro abierto con monedas','Poción mágica burbujeante azul','Mando retro NES clásico','Seta power-up roja con puntos blancos'], palettes: ['Azul eléctrico, dorado, rojo, negro, cian','Negro, cian neón, magenta, amarillo, blanco','Azul marino, dorado brillante, rojo fuego, verde esmeralda'], mood: 'Épico retro gaming, aventura heroica, nostalgia 8-bit, victoria gloriosa, power-up, +1UP' },
+        { id: 'spaceship-blueprints', name: 'Spaceship Blueprints', environments: ['Hangar espacial futurista con luces de neón y cuadrícula técnica','Mesa de trabajo de ingeniero con planos holográficos flotantes','Fondo técnico azul oscuro con rejilla y anotaciones de medidas'], subjects: ['Nave espacial vista lateral con detalles técnicos y despiece','Nave espacial vista superior con dimensiones y flechas indicadoras','Motor de propulsión despiezado con etiquetas de componentes','Cabina de mando con paneles de control y mandos pixelados','Drone explorador con esquemas de vuelo y trayectorias','Casco de astronauta con visor y especificaciones técnicas'], palettes: ['Azul cian, blanco, negro, gris técnico','Azul marino, verde fósforo, negro, blanco','Gris acero, naranja alerta, negro, blanco'], mood: 'Técnico, futurista, ingeniería espacial, detallado, esquemático, blueprint, sci-fi retro' },
+        { id: 'dino-universe', name: '🦖 DinoUniverse', environments: ['Jungla prehistórica con helechos gigantes y volcanes activos al fondo','Cueva oscura con cristales brillantes y huesos de dinosaurio fosilizados','Pantano neblinoso con árboles caídos, aguas turbias y libélulas gigantes'], subjects: ['T-Rex rugiendo con detalles de escamas pixeladas y dientes afilados','Triceratops defendiendo su territorio con cuernos imponentes','Pterodáctilo volando sobre un acantilado con alas desplegadas','Huevo de dinosaurio a punto de eclosionar con grietas luminosas','Huellas fosilizadas en piedra con textura detallada','Amuleto prehistórico de hueso y ámbar con insecto atrapado'], palettes: ['Verde selva, marrón tierra, naranja volcán, negro','Azul profundo, turquesa, gris piedra, blanco hueso','Rojo lava, negro ceniza, verde musgo, amarillo ámbar'], mood: 'Prehistórico, salvaje, aventura, peligro inminente, descubrimiento, era de los dinosaurios, supervivencia' },
+        { id: 'universo-musical', name: '🎵 Universo Musical', environments: ['Escenario de concierto retro con luces de neón, humo y altavoces gigantes','Estudio de grabación vintage con consola de mezclas, cintas magnéticas y micrófonos','Sala de música underground con grafitis, luces estroboscópicas y público pixelado'], subjects: ['Guitarra eléctrica con efectos de distorsión y ondas sonoras pixeladas','Sintetizador retro con teclas brillantes, cables conectados y luces LED','Micrófono clásico de studio con base metálica y rejilla detallada','Disco de vinilo girando con surcos visibles y ondas de sonido alrededor','Batería acústica completa con platillos brillantes y baquetas en movimiento','Cassette de música con etiqueta personalizada y cinta enrollada'], palettes: ['Morado neón, rosa fucsia, cian, negro (Synthwave)','Naranja cálido, marrón madera, dorado, negro (Jazz/Vintage)','Verde lima, negro, blanco, gris (Techno/Industrial)'], mood: 'Rítmico, vibrante, concierto en vivo, estudio creativo, nostalgia musical, ondas sonoras, energía escénica' },
+        { id: 'viuda-negra-munecas', name: '🕷️ Friki Universo del Negro y Muñecas Viuda Negra', environments: ['Mansión gótica oscura con cortinas de terciopelo negro, candelabros de hierro y espejos empañados','Boudoir victoriano con rosas secas, encajes negros, jaulas de pájaros antiguas y velas derretidas','Cementerio neblinoso nocturno con lápidas antiguas, rosas rojas y sombras alargadas'], subjects: ['Muñeca de porcelana con vestido negro de encaje, cabello largo y ojos penetrantes','Viuda negra elegante con velo negro translúcido, guantes largos y collar de perlas oscuras','Muñeca gótica con sombrero de copa, bastón y un cuervo posado en el hombro','Muñeca de trapo oscura con costuras visibles, botones en los ojos y hilos colgantes','Jaula de pájaros antigua con una rosa negra marchita dentro','Sombrilla de encaje negro con detalles de calaveras y arañas'], palettes: ['Negro profundo, rojo sangre, blanco hueso, gris plata','Negro, morado oscuro, verde esmeralda, dorado antiguo','Negro, azul medianoche, rosa polvoriento, gris carbón'], mood: 'Gótico, misterioso, elegante, melancólico, terrorífico, victoriano, muñecas antiguas, viuda negra, atmósfera oscura, friki' },
+        { id: 'universo-matematico', name: '🔢 Universo Matemático', environments: ['Aula clásica con pizarra verde cubierta de ecuaciones, tizas de colores y pupitres de madera','Laboratorio de geometría con figuras 3D flotantes, compás gigante y reglas transparentes','Espacio abstracto infinito con números flotantes, símbolos matemáticos y fractales brillantes','Biblioteca antigua con estanterías de libros de matemáticas, ábacos y pergaminos con fórmulas'], subjects: ['Triángulo pitagórico con fórmulas flotantes y ángulos marcados en pixel art','Número Pi (π) gigante con dígitos infinitos espiralándose alrededor','Ecuación de Euler e^(iπ) + 1 = 0 con símbolos brillantes y aura dorada','Cubo de Rubik resuelto con caras de colores vibrantes en estilo pixel','Gráfica de función matemática con ejes coordenados y curva animada','Compás y regla cruzados formando una X con destellos de precisión','Símbolo de infinito (∞) con partículas de luz recorriendo su trayectoria','Calculadora retro pixelada con pantalla LCD y botones coloridos'], palettes: ['Verde pizarra, blanco tiza, amarillo giz, negro (Clásico Aula)','Azul profundo, dorado, blanco, negro (Matemáticas Elegantes)','Morado fractal, cian, rosa neón, negro (Matemáticas Abstractas)','Marrón madera, beige pergamino, negro tinta, rojo sello (Biblioteca Antigua)'], mood: 'Precisión, lógica, elegancia matemática, descubrimiento intelectual, belleza de los números, geometría perfecta, infinito, conocimiento' },
+        { id: 'universo-vampirico', name: '🧛 Universo Vampírico', environments: ['Castillo gótico en lo alto de un acantilado bajo una luna llena sangrienta','Cripta subterránea con ataúdes abiertos, telarañas y velas derretidas','Bosque nocturno con niebla espesa, árboles retorcidos y ojos brillantes en la oscuridad'], subjects: ['Vampiro aristócrata con capa roja, colmillos afilados y mirada hipnótica','Murciélago gigante con alas desplegadas y aura de sombras','Copa de vino tinto desbordante con líquido espeso y brillante','Ataúd de madera oscura con interior de terciopelo rojo y cruces invertidas','Rosa negra marchita con espinas largas y gotas de rocío rojo','Espejo antiguo empañado reflejando una silueta sin rostro'], palettes: ['Rojo sangre, negro profundo, gris piedra, blanco hueso','Morado oscuro, verde esmeralda apagado, negro, dorado antiguo','Azul medianoche, rojo carmesí, gris niebla, negro'], mood: 'Gótico, terror elegante, oscuridad eterna, aristocracia vampírica, misterio nocturno, sed de sangre, atmósfera macabra' },
+        { id: 'universo-horror-clown', name: '🤡 Universo Horror Clown', environments: ['Circo abandonado bajo la luna con carpa rasgada, luces parpadeantes y polvo flotando en el aire','Callejón oscuro con luces de neón de circo reflejadas en charcos, grafitis siniestros y niebla baja','Camerino de payaso con espejos rotos, maquillaje derramado, bombillas fundidas y sombras acechantes','Carpa de circo interior con asientos vacíos, telarañas gigantes y un foco solitario iluminando la pista'], subjects: ['Payaso siniestro con sonrisa macabra exagerada, nariz roja brillante y ojos hundidos oscuros','Globo rojo flotante con forma de corazón roto y cuerda enredada como serpiente','Payaso con motosierra y traje a rayas descolorido, salpicaduras y mirada perturbadora','Títere de ventrílocuo con expresión demoníaca, hilos visibles y sonrisa cosida','Caja de sorpresas (jack-in-the-box) con payaso saltando y resortes oxidados','Zapato de payaso gigante con flores ácidas y cordones desatados como tentáculos','Nariz roja de payaso con reflejo brillante sobre fondo completamente negro','Payaso emergiendo de las sombras con solo los ojos y la sonrisa visibles'], palettes: ['Rojo brillante, amarillo payaso, blanco maquillaje, negro profundo (Clásico Siniestro)','Morado tóxico, verde ácido, negro, blanco hueso (Circo Pesadilla)','Rosa chicle desaturado, azul eléctrico apagado, negro, gris ceniza (Circo Olvidado)'], mood: 'Terror circense, pesadilla infantil, payasos siniestros, humor macabro, circo maldito, risas perturbadoras, atmósfera inquietante, phobia de payasos, carnaval maldito' },
+        { id: 'universo-mechs', name: '🤖 Universo Mechs', environments: ['Hangar militar futurista con mechas gigantes en mantenimiento, grúas industriales y luces de soldadura','Campo de batalla post-apocalíptico con mechas dañados, escombros humeantes y cielo naranja tóxico','Ciudad cyberpunk con rascacielos gigantes, anuncios de neón y mechas patrullando las calles','Fábrica automatizada con brazos robóticos ensambrando mechas, chispas y vapor industrial'], subjects: ['Mech gigante tipo Gundam con armadura detallada, cañón de plasma y escudo energético','Mech ligero ágil con katanas láser, propulsores en la espalda y diseño aerodinámico','Mech pesado de artillería con misiles múltiples, blindaje reforzado y torreta giratoria','Cabina de piloto con HUD holográfico, mandos complejos y pantalla de radar','Brazo mecánico gigante con garras hidráulicas, cables expuestos y joints articulados','Mech tipo Transformer en modo robot con detalles de transformación visibles','Exoesqueleto de combate con piloto visible, armas montadas y servomotores','Mech dañado en batalla con armadura agrietada, chispas eléctricas y humo saliendo'], palettes: ['Gris acero, azul militar, naranja alerta, negro (Militar Clásico)','Cian neón, morado eléctrico, negro, blanco (Cyberpunk Futurista)','Verde oliva, marrón óxido, negro, amarillo señal (Post-Apocalíptico)','Blanco perla, dorado, azul royal, negro (Mech Élite Premium)'], mood: 'Épico militar, tecnología avanzada, combate futurista, poder mecánico, guerra de robots, ingeniería masiva, acción intensa, sci-fi militar' },
+        { id: 'universo-egipto', name: '🏛️ Universo Egipto', environments: ['Templo de Karnak con columnas gigantes cubiertas de jeroglíficos, obeliscos dorados y antorchas humeantes','Pirámide de Keops al atardecer con arena dorada, esfinge vigilante y palmeras al fondo','Tumba del faraón en el Valle de los Reyes con sarcófago dorado, pinturas murales y luz de antorchas','Mercado del antiguo Nilo con barcazas de papiro, mercaderes y el río brillando bajo el sol'], subjects: ['Faraón con corona doble (pschent), cetro y collar usekh dorado, mirada imponente','Momia envuelta en vendas con amuletos de oro y ojos brillantes de lapislázuli','Escarabajo sagrado (Khepri) con alas desplegadas y disco solar sobre la espalda','Ojo de Horus (Udyat) con detalles en turquesa, oro negro y líneas ceremoniales','Ankh (cruz de la vida) con jeroglíficos grabados y aura dorada brillante','Estatua de Anubis con cabeza de chacal, bastón y piel de pantera negra','Barca solar de Ra con velas de lino, dioses protectores y disco solar radiante','Cleopatra con tocado de buitre y cobra, maquillaje kohl y joyas de lapislázuli'], palettes: ['Oro brillante, arena dorada, turquesa Nilo, negro obsidiana (Faraónico Clásico)','Ocre rojo, beige papiro, azul lapislázuli, negro tinta (Jeroglífico Antiguo)','Verde esmeralda, dorado, blanco lino, marrón desierto (Rituales Sagrados)','Negro profundo, dorado, rojo sangre, turquesa (Tumba Maldita)'], mood: 'Majestuoso, misterioso, sagrado, eterno, poder faraónico, maldición ancestral, rituales del más allá, desierto infinito, gloria del Nilo, jeroglíficos ancestrales' },
+        { id: 'universo-arcade-legends', name: '🕹️ ARCADE LEGENDS', environments: ["Salón recreativo lleno de máquinas arcade", "Torneo internacional de videojuegos", "Centro comercial de los años 80", "Sala de pinballs iluminada con neón", "Mundo digital pixelado", "Interior de una máquina recreativa gigante", "Ciudad construida con bloques pixelados", "Habitación gamer retro", "Museo de videojuegos clásicos", "Laboratorio de desarrollo arcade", "Centro de mando digital", "Casino arcade futurista", "Parque temático de videojuegos", "Centro de entrenamiento de campeones arcade", "Galería de campeones legendarios", "Arena de eSports retro", "Dimensión de los videojuegos perdidos", "Túnel de datos pixelados", "Mundo CRT flotante", "Reino de las monedas doradas"], subjects: ["Héroe arcade clásico", "Campeón de torneo retro", "Fantasma pixelado sonriente", "Nave espacial 8-bit", "Máquina recreativa legendaria", "Moneda dorada gigante", "Joystick arcade profesional", "Controlador retro de consola", "Princesa pixelada", "Guerrero de plataformas", "Robot arcade de combate", "Dragón de videojuego", "Hongo power-up", "Corazón de vida extra", "Cofre de bonus", "Cubo de energía", "Cristal de puntuación máxima", "Trofeo arcade dorado", "Casco de piloto espacial", "Bola de pinball brillante", "Portal digital", "Cubo glitch", "Disco de datos luminoso", "Boss final pixelado", "Mago arcade", "Ninja retro", "Vaquero pixelado", "Explorador espacial", "Dinosaurio de videojuego", "Alienígena amistoso", "Caballero 16-bit", "Corredor futurista", "Hacker pixelado", "Mascota arcade", "Dragón mecánico", "Estatua del campeón supremo", "CPU consciente", "Cartucho legendario", "Consola portátil clásica", "Televisor CRT encantado"], palettes: ["Magenta neón, cian, negro profundo", "Verde monitor CRT, gris, blanco", "Naranja recreativa, azul eléctrico, negro", "Púrpura synthwave, rosa neón, turquesa", "Dorado bonus, rojo, negro", "Verde fósforo, azul oscuro, blanco", "Rojo pixel, amarillo energía, gris acero", "Azul retro, plata, cian brillante", "Arcoíris arcade saturado"], mood: 'Nostalgia retro gaming, competición arcade intensa, diversión desenfrenada, aventura de videojuego clásico, épica de alta puntuación, energía de recreativos ochenteros, espíritu de campeonato mundial, exploración digital infinita, cultura gamer legendaria, velocidad y reflejos extremos, celebración de victoria arcade, misterio tecnológico retro, caos pixelado controlado, leyendas de los videojuegos, sensación de Insert Coin, fiebre por superar récords, mundo virtual lleno de secretos, gloria de salón recreativo, fantasía digital colorida, homenaje a la edad de oro de los videojuegos' }
+    ];
+
+    function normalizeUniverse(univ) {
+        if (!univ || typeof univ !== 'object') return null;
+        const cleaned = {};
+        Object.keys(univ).forEach(key => { cleaned[key.trim()] = univ[key]; });
+        let moodValue = cleaned.mood || '';
+        if (Array.isArray(moodValue)) moodValue = moodValue.join(', ');
+        return {
+            id: (cleaned.id || '').trim() || 'univ-' + Date.now() + Math.random().toString(36).substr(2, 5),
+            name: (cleaned.name || '').trim() || 'Universo sin nombre',
+            environments: Array.isArray(cleaned.environments) ? cleaned.environments.map(e => (e || '').trim()).filter(e => e) : [],
+            subjects: Array.isArray(cleaned.subjects) ? cleaned.subjects.map(s => (s || '').trim()).filter(s => s) : [],
+            palettes: Array.isArray(cleaned.palettes) ? cleaned.palettes.map(p => (p || '').trim()).filter(p => p) : [],
+            treasures: Array.isArray(cleaned.treasures) ? cleaned.treasures.map(t => (t || '').trim()).filter(t => t) : [],
+            mood: (typeof moodValue === 'string') ? moodValue.trim() : ''
+        };
+    }
+
+    function normalizeUniverseList(list) {
+        return Array.isArray(list) ? list.map(normalizeUniverse).filter(u => u !== null) : [];
+    }
+
+    let universes = JSON.parse(localStorage.getItem('pixelArtUniverses')) || [...defaultUniverses];
+    universes = normalizeUniverseList(universes);
+
+    function mergeDefaultUniverses() {
+        try {
+            const storedIds = new Set(universes.map(u => u.id));
+            let addedCount = 0;
+            defaultUniverses.forEach(defaultUniv => {
+                if (!storedIds.has(defaultUniv.id)) {
+                    universes.push(normalizeUniverse(defaultUniv));
+                    addedCount++;
+                }
+            });
+            if (addedCount > 0) localStorage.setItem('pixelArtUniverses', JSON.stringify(universes));
+        } catch (e) {
+            console.error('Error al fusionar universos por defecto:', e);
+        }
+    }
+    mergeDefaultUniverses();
+
+    let selectedOptions = {}, translatedPrompt = '', editingUniverseId = null, selectedIconCount = 9;
+    const outputPrompt = document.getElementById('output-prompt'),
+          copyHint = document.getElementById('copy-hint'),
+          copyToast = document.getElementById('copy-toast');
+    const translateBtn = document.getElementById('translate-btn'),
+          copyOriginalBtn = document.getElementById('copy-original-btn'),
+          copyTranslatedBtn = document.getElementById('copy-translated-btn');
+    const modalTitle = document.getElementById('modal-title'),
+          saveUniverseBtn = document.getElementById('save-universe'),
+          updateUniverseBtn = document.getElementById('update-universe');
+    let copyTimeout = null, toastTimeout = null;
+
+    function showToast(message, icon = '✅', duration = 2000) {
+        copyToast.innerHTML = `<span class="toast-icon">${icon}</span>${message}`;
+        copyToast.classList.add('show');
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => { copyToast.classList.remove('show'); }, duration);
+    }
+
+    function copyTextToClipboard(text) {
+        async function doCopy() {
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(text);
+                } else {
+                    const t = document.createElement('textarea');
+                    t.value = text; document.body.appendChild(t); t.select();
+                    document.execCommand('copy'); document.body.removeChild(t);
+                }
+                showCopyFeedback();
+            } catch (err) {
+                const t = document.createElement('textarea');
+                t.value = text; document.body.appendChild(t); t.select();
+                document.execCommand('copy'); document.body.removeChild(t);
+                showCopyFeedback();
+            }
+        }
+        doCopy();
+    }
+
+    function showCopyFeedback() {
+        outputPrompt.classList.add('copied');
+        clearTimeout(copyTimeout);
+        copyTimeout = setTimeout(() => { outputPrompt.classList.remove('copied'); }, 1500);
+        showToast('¡Prompt copiado!', '✅');
+    }
+
+    outputPrompt.addEventListener('click', () => {
+        if (outputPrompt.value && outputPrompt.value.trim() !== '') copyTextToClipboard(outputPrompt.value);
+    });
+    copyOriginalBtn.addEventListener('click', () => {
+        if (outputPrompt.value) copyTextToClipboard(outputPrompt.value);
+    });
+    copyTranslatedBtn.addEventListener('click', () => {
+        if (translatedPrompt) copyTextToClipboard(translatedPrompt);
+    });
+
+    function updateCopyHint() {
+        if (outputPrompt.value && outputPrompt.value.trim() !== '') {
+            copyHint.classList.add('visible'); translateBtn.disabled = false; copyOriginalBtn.disabled = false;
+        } else {
+            copyHint.classList.remove('visible'); translateBtn.disabled = true; copyOriginalBtn.disabled = true;
+            copyTranslatedBtn.disabled = true; copyTranslatedBtn.style.display = 'none';
+        }
+    }
+
+    async function translateToEnglish(text) {
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=es|en`;
+        try {
+            const r = await fetch(url); if (!r.ok) throw new Error('Error');
+            const d = await r.json();
+            if (d.responseStatus === 200 && d.responseData) return d.responseData.translatedText;
+            throw new Error('Inválida');
+        } catch (e) { throw e; }
+    }
+
+    translateBtn.addEventListener('click', async () => {
+        const text = outputPrompt.value; if (!text || text.trim() === '') return;
+        translateBtn.disabled = true; translateBtn.classList.add('loading');
+        translateBtn.innerHTML = '<span>⏳</span><span>Traduciendo...</span>';
+        try {
+            const chunks = [], lines = text.split('\n'); let cur = '';
+            for (const l of lines) {
+                if ((cur + l).length > 450) { if (cur) chunks.push(cur); cur = l; } else { cur += (cur ? '\n' : '') + l; }
+            }
+            if (cur) chunks.push(cur);
+            const tChunks = [];
+            for (const c of chunks) { tChunks.push(await translateToEnglish(c)); await new Promise(r => setTimeout(r, 300)); }
+            translatedPrompt = tChunks.join('\n'); outputPrompt.value = translatedPrompt;
+            outputPrompt.classList.add('translated'); copyTranslatedBtn.disabled = false; copyTranslatedBtn.style.display = 'flex';
+            translateBtn.innerHTML = '<span>✅</span><span>Traducido</span>';
+            setTimeout(() => { translateBtn.innerHTML = '<span>🔄</span><span>Re-traducir</span>'; translateBtn.disabled = false; }, 2000);
+        } catch (e) {
+            translateBtn.innerHTML = '<span>❌</span><span>Error</span>';
+            setTimeout(() => { translateBtn.innerHTML = '<span>🌍</span><span>Traducir al Inglés</span>'; translateBtn.disabled = false; }, 2000);
+            showToast('Error al traducir', '❌');
+        } finally { translateBtn.classList.remove('loading'); }
+    });
+
+    const infoPopup = document.getElementById('info-popup'),
+          popupCategory = document.getElementById('popup-category'),
+          popupTitle = document.getElementById('popup-title'),
+          popupDescription = document.getElementById('popup-description'),
+          closePopup = document.getElementById('close-popup');
+    const categoryNames = {
+        'style-options': '🎨 ESTILO PIXEL ART', 'product-options': '🛍️ PRODUCTO',
+        'resolution-options': '📐 RESOLUCIÓN DE SPRITE', 'color-options': '🎨 LÍMITE DE COLORES',
+        'camera-options': '📷 ÁNGULO DE CÁMARA PIXEL', 'lighting-options': '💡 ILUMINACIÓN PIXEL'
+    };
+
+    function isMobile() { return window.innerWidth <= 768; }
+
+    function showInfoPopup(btn) {
+        popupCategory.textContent = categoryNames[btn.parentElement.id] || 'CATEGORÍA';
+        popupTitle.textContent = btn.textContent;
+        popupDescription.textContent = btn.dataset.info || 'Info no disponible.';
+        if (isMobile()) {
+            infoPopup.style.left = ''; infoPopup.style.right = ''; infoPopup.style.top = '50%'; infoPopup.style.transform = 'translateY(-50%)';
+        } else {
+            const r = btn.getBoundingClientRect(), w = 400, h = infoPopup.offsetHeight || 200;
+            let l = r.right + 10, t = r.top;
+            if (l + w > window.innerWidth - 20) l = r.left - w - 10;
+            if (l < 10) l = 10;
+            if (t + h > window.innerHeight - 20) t = window.innerHeight - h - 20;
+            if (t < 10) t = 10;
+            infoPopup.style.left = l + 'px'; infoPopup.style.top = t + 'px'; infoPopup.style.transform = 'none';
+        }
+        infoPopup.classList.add('active');
+    }
+
+    function hideInfoPopup() { infoPopup.classList.remove('active'); }
+
+    closePopup.addEventListener('click', (e) => { e.stopPropagation(); hideInfoPopup(); });
+    document.addEventListener('click', (e) => {
+        if (!infoPopup.contains(e.target) && !e.target.classList.contains('option-btn')) hideInfoPopup();
+    });
+    window.addEventListener('resize', () => {
+        if (infoPopup.classList.contains('active') && isMobile()) {
+            infoPopup.style.left = ''; infoPopup.style.right = ''; infoPopup.style.top = '50%'; infoPopup.style.transform = 'translateY(-50%)';
+        }
+    });
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(btn.dataset.tab).classList.add('active');
+            if (btn.dataset.tab === 'universo') renderUniverses();
+            if (btn.dataset.tab === 'salida') { renderPresets(); setTimeout(updateCopyHint, 100); }
+        });
+    });
+
+    // Delegación de eventos para option-btns (agiliza el renderizado y evita onclick inline)
+    document.querySelectorAll('.options').forEach(container => {
+        container.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            e.stopPropagation();
+            
+            if (btn.classList.contains('option-btn')) {
+                container.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                
+                if (btn.classList.contains('icon-count-btn')) {
+                    selectedIconCount = parseInt(btn.dataset.count);
+                } else {
+                    selectedOptions[container.id] = btn.dataset.value;
+                    if (container.id === 'style-options') {
+                        updateIconPanelVisibility();
+                    }
+                    showInfoPopup(btn);
+                }
+            }
+        });
+    });
+
+    const iconCountWrapper = document.getElementById('icon-count-wrapper');
+    function updateIconPanelVisibility() {
+        const style = selectedOptions['style-options'] || '';
+        const isIcon = style.includes('Icono de Inventario RPG');
+        iconCountWrapper.style.display = isIcon ? 'block' : 'none';
+    }
+
+    function clearUniverseForm() {
+        document.getElementById('universe-name').value = ''; document.getElementById('universe-environments').value = '';
+        document.getElementById('universe-subjects').value = ''; document.getElementById('universe-palettes').value = '';
+        document.getElementById('universe-treasures').value = ''; document.getElementById('universe-mood').value = '';
+    }
+
+    function setModalMode(mode) {
+        if (mode === 'create') {
+            modalTitle.textContent = '✨ CREAR NUEVO UNIVERSO'; saveUniverseBtn.style.display = 'inline-block'; updateUniverseBtn.style.display = 'none'; editingUniverseId = null;
+        } else if (mode === 'edit') {
+            modalTitle.textContent = '✏️ EDITAR UNIVERSO'; saveUniverseBtn.style.display = 'none'; updateUniverseBtn.style.display = 'inline-block';
+        }
+    }
+
+    document.getElementById('new-universe-btn').addEventListener('click', () => {
+        clearUniverseForm(); setModalMode('create'); document.getElementById('universe-modal').classList.add('active');
+    });
+
+    function editUniverse(id) {
+        const u = universes.find(x => x.id === id); if (!u) return;
+        document.getElementById('universe-name').value = u.name;
+        document.getElementById('universe-environments').value = u.environments.join('\n');
+        document.getElementById('universe-subjects').value = u.subjects.join('\n');
+        document.getElementById('universe-palettes').value = u.palettes.join('\n');
+        document.getElementById('universe-treasures').value = Array.isArray(u.treasures) ? u.treasures.join('\n') : '';
+        document.getElementById('universe-mood').value = u.mood;
+        editingUniverseId = id; setModalMode('edit'); document.getElementById('universe-modal').classList.add('active');
+    }
+
+    document.getElementById('close-modal').addEventListener('click', () => { document.getElementById('universe-modal').classList.remove('active'); editingUniverseId = null; });
+    document.getElementById('cancel-universe').addEventListener('click', () => { document.getElementById('universe-modal').classList.remove('active'); editingUniverseId = null; });
+    
+    // CORREGIDO: Ahora escucha al ID que sí existe en el HTML
+    document.getElementById('active-universe-display').addEventListener('click', () => {
+        document.querySelector('[data-tab="universo"]').click();
+    });
+
+    function getFormData() {
+        return {
+            name: document.getElementById('universe-name').value.trim(),
+            environments: document.getElementById('universe-environments').value.split('\n').filter(e => e.trim()),
+            subjects: document.getElementById('universe-subjects').value.split('\n').filter(s => s.trim()),
+            palettes: document.getElementById('universe-palettes').value.split('\n').filter(p => p.trim()),
+            treasures: document.getElementById('universe-treasures').value.split('\n').filter(t => t.trim()),
+            mood: document.getElementById('universe-mood').value.trim()
+        };
+    }
+
+    function validateFormData(d) {
+        if (!d.name || d.environments.length < 2 || d.subjects.length < 2 || d.palettes.length < 2) {
+            showToast('⚠️ Nombre, 2+ entornos, 2+ sujetos y 2+ paletas obligatorios', '⚠️', 3000); return false;
+        }
+        return true;
+    }
+
+    saveUniverseBtn.addEventListener('click', () => {
+        const d = getFormData(); if (!validateFormData(d)) return;
+        universes.push({ id: 'univ-' + Date.now(), ...d });
+        localStorage.setItem('pixelArtUniverses', JSON.stringify(universes));
+        document.getElementById('universe-modal').classList.remove('active'); clearUniverseForm(); renderUniverses(); renderPresets();
+        showToast(`✨ Universo "${d.name}" creado`, '✨');
+    });
+
+    updateUniverseBtn.addEventListener('click', () => {
+        if (!editingUniverseId) return; const d = getFormData(); if (!validateFormData(d)) return;
+        const idx = universes.findIndex(u => u.id === editingUniverseId); if (idx === -1) return;
+        universes[idx] = { id: editingUniverseId, ...d };
+        localStorage.setItem('pixelArtUniverses', JSON.stringify(universes));
+        document.getElementById('universe-modal').classList.remove('active'); clearUniverseForm(); editingUniverseId = null; renderUniverses(); renderPresets();
+        showToast(`✏️ Universo "${d.name}" actualizado`, '✨');
+    });
+
+    // ============================================
+    // RENDERIZADO CON EVENT DELEGATION (Sin onclick inyectados)
+    // ============================================
+    function renderUniverses() {
+        const c = document.getElementById('universes-list');
+        if (universes.length === 0) {
+            c.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No hay universos. Crea el primero ✨</p>'; return;
+        }
+        c.innerHTML = universes.map(u => {
+            const treasuresCount = Array.isArray(u.treasures) ? u.treasures.length : 0;
+            const moodCount = u.mood ? 1 : 0;
+            return `
+            <div class="universe-card" data-id="${escapeHtml(u.id)}">
+                <h4>${escapeHtml(u.name)}</h4>
+                <p>
+                   <strong>🗺️ Entornos:</strong> ${u.environments.length} | <strong>🧍 Sujetos:</strong> ${u.subjects.length} | <strong>🎨 Paletas:</strong> ${u.palettes.length} | <strong>💎 Treasures:</strong> ${treasuresCount} | <strong>🎭 Moods:</strong> ${moodCount}
+                </p>
+                <p style="margin-top: 5px;"><strong>Mood:</strong> ${escapeHtml(Array.isArray(u.mood) ? u.mood.join(', ') : u.mood)}</p>
+                <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+                    <button class="preset-btn js-apply-universe" data-id="${escapeHtml(u.id)}" style="flex: 1; min-width: 100px;">⚡ Usar</button>
+                    <button class="option-btn js-edit-universe" data-id="${escapeHtml(u.id)}" style="background: #ffaa00; color: #0a0a1a; border: none;" aria-label="Editar universo ${escapeHtml(u.name)}">✏️ Editar</button>
+                    <button class="option-btn js-delete-universe" data-id="${escapeHtml(u.id)}" style="background: #ff0066; color: white; border: none;" aria-label="Eliminar universo ${escapeHtml(u.name)}">🗑</button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // Event Delegation para Universos
+    document.getElementById('universes-list').addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        if (btn.classList.contains('js-apply-universe')) applyUniverse(id);
+        else if (btn.classList.contains('js-edit-universe')) editUniverse(id);
+        else if (btn.classList.contains('js-delete-universe')) deleteUniverse(id);
+    });
+
+    function deleteUniverse(id) {
+        if (confirm('¿Eliminar este universo?')) {
+            universes = universes.filter(u => u.id !== id);
+            localStorage.setItem('pixelArtUniverses', JSON.stringify(universes));
+            if (selectedOptions.activeUniverse && selectedOptions.activeUniverse.id === id) {
+                selectedOptions.activeUniverse = null; updateActiveUniverseDisplay();
+            }
+            renderUniverses(); renderPresets(); showToast('Universo eliminado', '🗑');
+        }
+    }
+
+    function renderPresets() {
+        const c = document.getElementById('presets-container');
+        if (universes.length === 0) {
+            c.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No hay presets disponibles</p>'; return;
+        }
+        c.innerHTML = universes.map(u =>
+            `<button class="preset-btn js-apply-preset" data-id="${escapeHtml(u.id)}">${escapeHtml(u.name)}</button>`
+        ).join('');
+    }
+
+    // Event Delegation para Presets
+    document.getElementById('presets-container').addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (btn && btn.classList.contains('js-apply-preset')) applyUniverse(btn.dataset.id);
+    });
+
+    function selectOption(cid, val) {
+        const c = document.getElementById(cid); if (!c) return;
+        c.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+        const t = Array.from(c.querySelectorAll('.option-btn')).find(b => b.dataset.value === val);
+        if (t) { t.classList.add('selected'); selectedOptions[cid] = val; } else { delete selectedOptions[cid]; }
+    }
+
+    function applyUniverse(id) {
+        const u = universes.find(x => x.id === id); if (!u) return;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelector('[data-tab="controles"]').classList.add('active');
+        document.getElementById('controles').classList.add('active');
+        document.querySelectorAll('.option-btn.selected').forEach(b => b.classList.remove('selected'));
+
+        const styleMap = { 'heroe-8bits':'8-bit NES', 'spaceship-blueprints':'Planos Ingeniería', 'dino-universe':'Adventure RPG', 'universo-musical':'Synthwave', 'viuda-negra-munecas':'Dark Fantasy', 'universo-matematico':'Sci-Fi', 'universo-vampirico':'Dark Fantasy', 'universo-horror-clown':'Horror', 'universo-mechs':'Sci-Fi', 'universo-egipto':'Adventure RPG', 'universo-arcade-legends':'Arcade Fighter' };
+        const colorMap = { 'heroe-8bits':'8 colores', 'spaceship-blueprints':'16 colores', 'dino-universe':'32 colores', 'universo-musical':'16 colores', 'viuda-negra-munecas':'8 colores', 'universo-matematico':'16 colores', 'universo-vampirico':'8 colores', 'universo-horror-clown':'8 colores', 'universo-mechs':'32 colores', 'universo-egipto':'16 colores', 'universo-arcade-legends':'16 colores' };
+
+        selectOption('style-options', styleMap[u.id] || 'Adventure RPG');
+        selectOption('color-options', colorMap[u.id] || '16 colores');
+
+        const designTextInput = document.getElementById('design-text');
+        const isUntouched = !designTextInput.value.trim() || designTextInput.dataset.autofilled === 'true';
+        if (isUntouched) {
+            const cleanName = u.name.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, '').trim();
+            designTextInput.value = cleanName || u.name.trim();
+            designTextInput.dataset.autofilled = 'true';
+        }
+
+        selectedOptions.activeUniverse = u; updateActiveUniverseDisplay();
+        showToast(`✅ Universo "${u.name}" cargado`, '✨');
+    }
+
+    function updateActiveUniverseDisplay() {
+        const nameEl = document.getElementById('active-universe-name');
+        const u = selectedOptions.activeUniverse;
+        if (u) { nameEl.textContent = u.name; nameEl.style.color = '#00ffff'; }
+        else { nameEl.textContent = 'Ninguno — ve a la pestaña Universo'; nameEl.style.color = '#aaa'; }
+    }
+
+    function pickRandom(arr, count = 1, asArray = false) {
+        if (!arr || arr.length === 0) return asArray ? [] : '';
+        const s = [...arr].sort(() => 0.5 - Math.random());
+        const result = s.slice(0, Math.min(count, arr.length));
+        return asArray ? result : result.join(', ');
+    }
+
+    function pickRandomWithRepeats(arr, count) {
+        if (!arr || arr.length === 0) return [];
+        if (count <= arr.length) return pickRandom(arr, count, true);
+        const result = [];
+        while (result.length < count) {
+            const cycle = [...arr].sort(() => 0.5 - Math.random());
+            if (result.length && cycle[0] === result[result.length - 1]) {
+                const swapAt = 1 + Math.floor(Math.random() * (cycle.length - 1));
+                [cycle[0], cycle[swapAt]] = [cycle[swapAt], cycle[0]];
+            }
+            result.push(...cycle);
+        }
+        return result.slice(0, count);
+    }
+
+    document.getElementById('compile-btn').addEventListener('click', () => {
+        const style = selectedOptions['style-options'] || 'Pixel Art 8-bit NES',
+              product = selectedOptions['product-options'] || '', resolution = selectedOptions['resolution-options'] || '',
+              colors = selectedOptions['color-options'] || '', camera = selectedOptions['camera-options'] || '',
+              lighting = selectedOptions['lighting-options'] || '';
+        const background = document.getElementById('background-select').value,
+              designText = document.getElementById('design-text').value,
+              model = document.getElementById('model-select').value,
+              aspect = document.getElementById('aspect-select').value,
+              u = selectedOptions.activeUniverse;
+        const isIconStyle = style.includes('Icono de Inventario RPG');
+
+        let p = `${style}`;
+        if (product) p += `, diseño para ${product}`;
+        if (resolution) p += `, ${resolution}`;
+        if (colors) p += `, ${colors}`;
+        if (camera && !isIconStyle) p += `, ${camera}`;
+        if (lighting) p += `, ${lighting}`;
+
+        if (u) {
+            if (isIconStyle) {
+                const pool = [...u.subjects, ...(Array.isArray(u.treasures) ? u.treasures : [])];
+                const iconCount = Math.min(selectedIconCount, 20) || Math.min(9, pool.length);
+                const chosen = pickRandomWithRepeats(pool, iconCount);
+                const isDense = iconCount > 12;
+                const sizeHint = isDense ? `tamaño reducido por icono para encajar ${iconCount} elementos en el mismo lienzo, manteniendo legibilidad mínima de la silueta` : `tamaño generoso por icono`;
+                const timesEach = Math.ceil(iconCount / pool.length);
+                const repeatWarning = timesEach > 1 ? `\n   ⚠️ El catálogo tiene solo ${pool.length} elementos para ${iconCount} iconos pedidos: cada uno se repetirá ~${timesEach}x. Variar pose, ángulo o tono de color en cada repetición para que no se vean clones idénticos.` : '';
+                p += `\n\n🌌 UNIVERSO: ${u.name}\n   🧩 Set de ${chosen.length} iconos tipo inventario RPG, ${sizeHint} (sin marcos ni casillas, iconos sueltos):${repeatWarning}\n   ${chosen.map((i, n) => `[${n+1}] ${i}`).join('\n   ')}\n   🎨 Paleta: ${pickRandom(u.palettes, 1)}\n   Mood: ${u.mood}\n   (Catálogo: ${u.subjects.length} sujetos, ${u.environments.length} entornos)\n   🔤 ETIQUETA POR ICONO: cada icono lleva su propio nombre corto escrito justo debajo, en texto pixel art legible (tipografía bitmap, mismo estilo retro), a modo de etiqueta de catálogo. Esta etiqueta es distinta del texto principal del diseño (si lo hay) y no lo sustituye.`;
+            } else {
+                p += `\n\n🌌 UNIVERSO: ${u.name}\n   🎲 Entorno: ${pickRandom(u.environments, 1)}\n   🎲 Sujetos: ${pickRandom(u.subjects, 2)}\n   🎨 Paleta: ${pickRandom(u.palettes, 1)}\n   Mood: ${u.mood}\n   (Catálogo: ${u.subjects.length} sujetos, ${u.environments.length} entornos)`;
+            }
+        }
+        if (background) p += `\n\n${background}`;
+        if (designText) {
+            const placementHint = isIconStyle ? `ubicado en una franja superior o inferior del lienzo, claramente separado y sin solaparse con ninguno de los iconos del set` : `ubicado en la zona superior o inferior de la composición (la que mejor encaje con el entorno y los sujetos elegidos), sin solaparse ni quedar detrás de ningún elemento`;
+            p += `\n\n🔤 TEXTO OBLIGATORIO EN LA IMAGEN: el texto "${designText}" debe aparecer escrito una única vez, claramente legible, ${placementHint}, integrado en tipografía pixel art / bitmap coherente con el estilo elegido (no omitir el texto, no sustituirlo por símbolos, no repetirlo en más de un lugar del diseño).`;
+        } else if (u) { p += `\n\nTexto generado automáticamente`; }
+
+        if (model) p += `\n\n🎨 Modelo: ${model}`;
+        if (aspect) p += `, Aspect Ratio: ${aspect}`;
+
+        if (isIconStyle) {
+            const dense = selectedIconCount > 12;
+            p += `\n\n⚙️ Parámetros: pixel art auténtico, cada elemento como icono individual y autocontenido, sin marco, sin casilla, sin borde de slot, sin cuadrícula ni líneas divisorias visibles, iconos dispersos libremente sobre el fondo con espaciado natural, contorno limpio de 1px en cada icono, sombreado plano 2-3 tonos, sin anti-aliasing, fondo neutro o transparente, estilo coherente entre todos los iconos del set, cada icono con su nombre en texto pixel art legible debajo${dense ? ', iconos en menor escala individual para que todo el set quepa de forma equilibrada en el lienzo sin saturarlo, manteniendo las etiquetas de texto legibles aunque el icono sea pequeño' : ''}`;
+        } else {
+            p += `\n\n⚙️ Parámetros: pixel art auténtico, sprites nítidos, paleta limitada, sin anti-aliasing, grid visible, retro gaming`;
+        }
+
+        document.getElementById('output-prompt').value = p;
+        outputPrompt.classList.remove('translated'); translatedPrompt = '';
+        copyTranslatedBtn.style.display = 'none'; copyTranslatedBtn.disabled = true;
+
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelector('[data-tab="salida"]').classList.add('active');
+        document.getElementById('salida').classList.add('active');
+        setTimeout(updateCopyHint, 100);
+        showToast('🎲 Elementos variados aleatoriamente', '🎲');
+    });
+
+    document.getElementById('export-btn').addEventListener('click', () => {
+        const d = JSON.stringify(normalizeUniverseList(universes), null, 2);
+        const b = new Blob([d], { type: 'application/json' });
+        const url = URL.createObjectURL(b); const a = document.createElement('a');
+        a.href = url; a.download = 'pixel-art-universes.json'; a.click(); URL.revokeObjectURL(url);
+        showToast('✅ Datos exportados', '⬇️');
+    });
+
+    document.getElementById('import-btn').addEventListener('click', () => document.getElementById('import-file').click());
+
+    document.getElementById('import-file').addEventListener('change', (e) => {
+        const f = e.target.files[0]; if (!f) return; const r = new FileReader();
+        r.onload = (ev) => {
+            try {
+                let imp = JSON.parse(ev.target.result); imp = normalizeUniverseList(imp);
+                if (imp.length === 0) { showToast('⚠️ Archivo inválido', '⚠️'); return; }
+                const rep = confirm(`¿Reemplazar (${universes.length}) con importados (${imp.length})?\nOK = REEMPLAZAR\nCANCELAR = FUSIONAR`);
+                if (rep) { universes = imp; } else {
+                    const ids = new Set(universes.map(u => u.id));
+                    imp.forEach(u => { if (!ids.has(u.id)) { universes.push(u); } else { const i = universes.findIndex(x => x.id === u.id); if (i !== -1) universes[i] = u; } });
+                }
+                localStorage.setItem('pixelArtUniverses', JSON.stringify(universes)); mergeDefaultUniverses(); renderUniverses(); renderPresets();
+                showToast(`✅ ${imp.length} universos importados`, '⬆️');
+            } catch (err) { showToast('❌ Error al importar', '❌', 3000); }
+        }; r.readAsText(f); e.target.value = '';
+    });
+
+    document.getElementById('design-text').addEventListener('input', (e) => e.target.dataset.autofilled = 'false');
+
+    renderUniverses(); renderPresets();
+</script>
+</body>
+</html>
